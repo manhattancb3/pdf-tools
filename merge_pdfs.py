@@ -94,5 +94,6 @@ def main():
         # Write new file to output folder and close
         merger.write(output_path)
         merger.close()
-
-main()
+        
+if __name__ == "__main__":
+    main()
