@@ -1,29 +1,18 @@
 '''
 Description:
-    This script is intended to merge PDF files, specifically Community Board resolutions
-    and SLA stipulation documents. It can also be used for Cannabis resolution and stipulations.
+    This program creates a user interface to merge PDF files, specifically Community Board resolutions
+    and SLA stipulation documents. It can also be used for general PDF merges.
 
-
-Potential updates:
-- create separate merge function for general use (not specific to SLA process)
-- abbreviate filepaths?
-
-Workflow:
+Auto SLA Workflow:
 1) Create PDFs of resolutions and save in "Resolution Document Components" Sharepoint folder
 2) Save all stipulation PDFs in "Resolution Document Components" folder
 3) Delete contents of working folders: "Resolution Document Components" and "SLA Resolutions wSTIPS"
 3) Download the entire "Resolution Document Components" folder (it will be zipped)
-4) Extract zipped/compressed folder contents to "PDF Tools" local folder (where this script is stored)
-5) Run script
+4) Extract zipped/compressed folder contents to a new folder
+5) Open PDF Merger interface and use automatic merge function
 6) Check output files for accuracy
 7) Upload all output files to correct Sharepoint folder
 
-
-GUI Design
-- choose manual operation
-    - pick PDFs to combine and order
-- choose automatic operation
-    - pick specific folder and verify matching criteria
 '''
 
 import os
@@ -281,16 +270,19 @@ root.geometry("750x500")    # window width & height in pixels
 root.columnconfigure(0, weight=0)  # Left column (radio buttons) - fixed
 root.columnconfigure(1, weight=1)  # Right column (main content) - flexible
 
+# Header section goes at row=0
+
 # Left frame for radio buttons
 left_frame = tk.Frame(root)
-left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
+left_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
 
 # Right frame for other functionality
 right_frame = tk.Frame(root, bg="lightgray")
-right_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+right_frame.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
 
 
 # __________ GUI VARIABLES __________ #
+
 # Holds auto merge folder path string
 folder_path_var = tk.StringVar()    
 folder_path_var.trace_add("write", on_folder_change)    # validate folder selection whenever it changes
@@ -318,40 +310,67 @@ output_path_var.trace_add("write", on_folder_change)    # validate folder select
 # __________________________________ #
 
 '''
-LEFT FRAME PANEL
+HEADER SECTION
 '''
-# Radio button panel
-instructions = tk.Label(left_frame, text="Choose an option:")
-instructions.grid(row=0, column=0, sticky="w", pady=10)
-auto_radio_button = tk.Radiobutton(left_frame, text="SLA Auto PDF Merge", variable=radio_selection, value="auto_merge", command=on_radio_option_change)
-auto_radio_button.grid(row=1, column=0, sticky="w", pady=10)
-manual_radio_button = tk.Radiobutton(left_frame, text="Manual PDF Merge", variable=radio_selection, value="manual_merge", command=on_radio_option_change)
-manual_radio_button.grid(row=2, column=0, sticky="w", pady=10)
+# Tool overview/introduction
+intro_text = (
+    "Use this tool to merge PDF files. It is intended for two different uses:"
+    "\n    1) automatically merge resolution and stipulation PDFs for the SLA process"
+    "\n    2) merge two specific PDF files"
+)
+introduction = tk.Label(root, text=intro_text, font=("Helvetica", 10), wraplength=700, justify="left")
+introduction.grid(row=0, column=0, columnspan=2, sticky="w", pady=10, padx=10)
 
-# Invisible radio button to create initial view with no selections
+'''
+LEFT FRAME SECTION
+'''
+
+# Radio button section
+# AUTO
+instructions = tk.Label(left_frame, text="Choose an option:", font=("Helvetica", 12, "bold"))
+instructions.grid(row=1, column=0, sticky="w", pady=(10, 5))
+
+auto_radio_button = tk.Radiobutton(left_frame, text="SLA Auto PDF Merge", variable=radio_selection, value="auto_merge", command=on_radio_option_change, font=("Helvetica", 10))
+auto_radio_button.grid(row=2, column=0, sticky="w", pady=5)
+auto_explainer_text = (
+    "NOTE: requires input folder with prepared PDF files (see SLA process guide) and output folder"
+)
+auto_instruction = tk.Label(left_frame, text=auto_explainer_text, font=("Helvetica", 8), wraplength=150, justify="left")
+auto_instruction.grid(row=3, column=0, sticky="w", pady=5)
+
+# MANUAL
+manual_radio_button = tk.Radiobutton(left_frame, text="Manual PDF Merge", variable=radio_selection, value="manual_merge", command=on_radio_option_change, font=("Helvetica", 10))
+manual_radio_button.grid(row=4, column=0, sticky="w", pady=5)
+manual_explainer_text = (
+    "NOTE: requires two input files, output filename, and output folder"
+)
+manual_instruction = tk.Label(left_frame, text=manual_explainer_text, font=("Helvetica", 8), wraplength=150, justify="left")
+manual_instruction.grid(row=5, column=0, sticky="w", pady=5)
+
+# Invisible radio button required to create initial view with no selections
 dummy_radio_button = tk.Radiobutton(left_frame, variable=radio_selection, value="none")
 dummy_radio_button.pack_forget()    # Makes button invisible
 
 # Label for general status feedback (ex: Success, Error, etc.)
-status_label = tk.Label(left_frame, textvariable=status_var, wraplength=100, justify="center")
-status_label.grid(row=4, column=0)
+status_label = tk.Label(left_frame, textvariable=status_var, font=("Helvetica", 12, "bold"), fg="red", wraplength=150, justify="center")
+status_label.grid(row=6, column=0)
 
 
 '''
-RIGHT FRAME PANEL
+RIGHT FRAME SECTION
 '''
 # _____ AUTO MERGE _____ #
 # Auto merge instructions
 auto_label = tk.Label(right_frame, text="Select folder with PDFs:")
-auto_label.grid(row=0, column=0)
+auto_label.grid(row=1, column=0)
 
 # Create field showing chosen folder
 folder_field = tk.Entry(right_frame, textvariable=folder_path_var, width=50)
-folder_field.grid(row=0, column=1)
+folder_field.grid(row=1, column=1)
 
 # Create browse button
 browse_button = tk.Button(right_frame, text="Browse...", command=browse_input_folder, state="disabled")
-browse_button.grid(row=0, column=2)
+browse_button.grid(row=1, column=2)
 
 
 # _____ MANUAL MERGE _____ #
@@ -394,4 +413,6 @@ output_browse_button.grid(row=manual_base_row+4, column=2)
 merge_button = tk.Button(right_frame, text="Merge PDFs", command=on_merge_click, state="disabled")
 merge_button.grid(row=manual_base_row+5, column=1)
 
+# ____________________________________________________
+# Runs GUI window
 root.mainloop()
