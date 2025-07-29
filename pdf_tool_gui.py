@@ -126,12 +126,13 @@ def manual_merge_pdfs(file1, file2, output_filename, output_folder):
     # Write new file to output folder and close
     merger.write(output_path)
     merger.close()
+    status_var.set("Merge completed successfully.")
     
 # Function for input folder "Browse..." button
 def browse_input_folder():
     folder_selected = filedialog.askdirectory()
     if folder_selected:
-        folder_path_var.set(folder_selected)
+        auto_folder_path_var.set(folder_selected)
 
         # Update size of field box based on file path size
         # folder_field.config(width=max(50, len(folder_selected)+10))
@@ -167,7 +168,7 @@ def browse_file(pdf_number):
 # Function for "Merge PDFs" button (calls main function)
 def on_merge_click():
     if radio_selection.get() == "auto_merge":
-        input_folder = folder_path_var.get()
+        input_folder = auto_folder_path_var.get()
         output_folder = output_path_var.get()
         auto_merge_pdfs(input_folder, output_folder)
     else:
@@ -189,21 +190,17 @@ def folder_contains_pdfs(folder):
 
 # Function called whenever folder path changes
 def on_folder_change(*args):
-    ready_state = False
-    auto_input_folder = folder_path_var.get()
+    auto_input_folder = auto_folder_path_var.get()
     output_folder = output_path_var.get()
-    print(output_folder)
-    # Enable the Merge button only if:
-    # 1. The folder exists and is a directory
-    # 2. The folder contains at least one PDF file
-    if radio_selection.get() == "auto_merge":
+
+    if radio_selection.get() == "auto_merge" and auto_input_folder:
         if os.path.isdir(auto_input_folder) and folder_contains_pdfs(auto_input_folder):
             merge_button.config(state="normal")  # Enable button
             status_var.set("Ready")
         else:
             merge_button.config(state="disabled")  # Disable button
             status_var.set("Invalid folder selection - verify choice is a valid folder with PDF files.")
-    else:
+    elif radio_selection.get() == "manual_merge" and output_folder:
         if os.path.isdir(output_folder):
             merge_button.config(state="normal")  # Enable button
             status_var.set("Ready")
@@ -220,18 +217,20 @@ def on_file_change(*args):
     file1 = pdf1_path_var.get()
     file2 = pdf2_path_var.get()
 
-    if is_pdf_file(file1) and is_pdf_file(file2):
-        merge_button.config(state="normal")  # Enable button
-        status_var.set("Ready")
-    elif not is_pdf_file(file1) and is_pdf_file(file2):
-        merge_button.config(state="disabled")  # Disable button
-        status_var.set("Invalid file selection - verify that PDF #1 is a PDF file.")
-    elif is_pdf_file(file1) and not is_pdf_file(file2):
-        merge_button.config(state="disabled")  # Disable button
-        status_var.set("Invalid file selection - verify that PDF #2 is a PDF file.")
-    else:
-        merge_button.config(state="disabled")  # Disable button
-        status_var.set("Invalid file selection - verify that chosen files are PDF files.")
+    if file1 and file2:
+        if is_pdf_file(file1) and is_pdf_file(file2):
+            pass
+            # merge_button.config(state="normal")  # Enable button
+            # status_var.set("Ready")
+        elif not is_pdf_file(file1) and is_pdf_file(file2):
+            merge_button.config(state="disabled")  # Disable button
+            status_var.set("Invalid file selection - verify that PDF #1 is a PDF file.")
+        elif is_pdf_file(file1) and not is_pdf_file(file2):
+            merge_button.config(state="disabled")  # Disable button
+            status_var.set("Invalid file selection - verify that PDF #2 is a PDF file.")
+        else:
+            merge_button.config(state="disabled")  # Disable button
+            status_var.set("Invalid file selections - verify that chosen files are PDF files.")
 
 # Function called whenever radio button selection changes
 def on_radio_option_change():
@@ -239,32 +238,53 @@ def on_radio_option_change():
     status_var.set("")
 
     # Clear field values
-    for field in [folder_path_var, output_path_var, pdf1_path_var, pdf2_path_var]:
+    for field in [auto_folder_path_var, output_path_var, pdf1_path_var, pdf2_path_var]:
         field.set("")
     
     if radio_selection.get() == "auto_merge":
-        print("auto merge")
-
         # Enable auto functionality
+        folder_field.config(state="normal")
         browse_button.config(state="normal")
 
         # Disable manual functionality
+        chosen_pdf_1.config(state="disabled")
+        chosen_pdf_2.config(state="disabled")
+        output_name.config(state="disabled")
+        output_folder_field.config(state="disabled")
         browse_pdf1_button.config(state="disabled")
         browse_pdf2_button.config(state="disabled")
+        output_browse_button.config(state="disabled")
     else:
-        print("manual merge")
-
         # Enable manual functionality
+        chosen_pdf_1.config(state="normal")
+        chosen_pdf_2.config(state="normal")
+        output_name.config(state="normal")
+        output_folder_field.config(state="normal")
         browse_pdf1_button.config(state="normal")
         browse_pdf2_button.config(state="normal")
+        output_browse_button.config(state="normal")
 
         # Disable auto functionality
         browse_button.config(state="disabled")
+        folder_field.config(state="disabled")
+
+# Validates inputs
+def validate_inputs():
+    if radio_selection.get() == "auto_merge":
+        auto_folder_path_var.get()
+
+    else:
+        pdf1_path_var.get()
+        pdf2_path_var.get()
+        output_filename_var.get()
+        output_path_var.get()
+
+    status_var.get()
 
 # GUI Setup
 root = tk.Tk()
 root.title("PDF Merger")
-root.geometry("750x500")    # window width & height in pixels
+root.geometry("800x450")    # window width & height in pixels
 
 # Configure column weights so column 1 (right side) expands
 root.columnconfigure(0, weight=0)  # Left column (radio buttons) - fixed
@@ -284,8 +304,8 @@ right_frame.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
 # __________ GUI VARIABLES __________ #
 
 # Holds auto merge folder path string
-folder_path_var = tk.StringVar()    
-folder_path_var.trace_add("write", on_folder_change)    # validate folder selection whenever it changes
+auto_folder_path_var = tk.StringVar()    
+auto_folder_path_var.trace_add("write", on_folder_change)    # validate folder selection whenever it changes
 
 # Holds status message string
 status_var = tk.StringVar() 
@@ -316,7 +336,7 @@ HEADER SECTION
 intro_text = (
     "Use this tool to merge PDF files. It is intended for two different uses:"
     "\n    1) automatically merge resolution and stipulation PDFs for the SLA process"
-    "\n    2) merge two specific PDF files"
+    "\n    2) manually choose and merge two specific PDF files"
 )
 introduction = tk.Label(root, text=intro_text, font=("Helvetica", 10), wraplength=700, justify="left")
 introduction.grid(row=0, column=0, columnspan=2, sticky="w", pady=10, padx=10)
@@ -330,7 +350,7 @@ LEFT FRAME SECTION
 instructions = tk.Label(left_frame, text="Choose an option:", font=("Helvetica", 12, "bold"))
 instructions.grid(row=1, column=0, sticky="w", pady=(10, 5))
 
-auto_radio_button = tk.Radiobutton(left_frame, text="SLA Auto PDF Merge", variable=radio_selection, value="auto_merge", command=on_radio_option_change, font=("Helvetica", 10))
+auto_radio_button = tk.Radiobutton(left_frame, text="Auto SLA PDF Merge", variable=radio_selection, value="auto_merge", command=on_radio_option_change, font=("Helvetica", 10))
 auto_radio_button.grid(row=2, column=0, sticky="w", pady=5)
 auto_explainer_text = (
     "NOTE: requires input folder with prepared PDF files (see SLA process guide) and output folder"
@@ -362,56 +382,63 @@ RIGHT FRAME SECTION
 # _____ AUTO MERGE _____ #
 # Auto merge instructions
 auto_label = tk.Label(right_frame, text="Select folder with PDFs:")
-auto_label.grid(row=1, column=0)
+auto_label.grid(row=1, column=0, padx=(10,10), pady=(50,80))
 
 # Create field showing chosen folder
-folder_field = tk.Entry(right_frame, textvariable=folder_path_var, width=50)
-folder_field.grid(row=1, column=1)
+folder_field = tk.Entry(right_frame, textvariable=auto_folder_path_var, width=50, state="disabled")
+folder_field.grid(row=1, column=1, padx=(10,10), pady=(50,80))
 
 # Create browse button
 browse_button = tk.Button(right_frame, text="Browse...", command=browse_input_folder, state="disabled")
-browse_button.grid(row=1, column=2)
+browse_button.grid(row=1, column=2, padx=(10,0), pady=(50,80))
 
 
 # _____ MANUAL MERGE _____ #
 manual_base_row = 4
 
 # Create browse button & display to show chosen file
-browse_pdf1_button = tk.Button(right_frame, text="Choose PDF #1...", command=lambda: browse_file("pdf1"), state="disabled") # lambda prevents immediate run of function with parameters
-browse_pdf1_button.grid(row=manual_base_row, column=0)
+pdf1_label = tk.Label(right_frame, text="Select PDF #1:")
+pdf1_label.grid(row=manual_base_row, column=0, padx=(10,10), pady=(5,5))
 
-chosen_pdf_1 = tk.Entry(right_frame, textvariable=pdf1_path_var, width=50)
+chosen_pdf_1 = tk.Entry(right_frame, textvariable=pdf1_path_var, width=50, state="disabled")
 chosen_pdf_1.grid(row=manual_base_row, column=1)
 
-browse_pdf2_button = tk.Button(right_frame, text="Choose PDF #2...", command=lambda: browse_file("pdf2"), state="disabled") # lambda prevents immediate run of function with parameters
-browse_pdf2_button.grid(row=manual_base_row+1, column=0)
+browse_pdf1_button = tk.Button(right_frame, text="Choose PDF #1...", command=lambda: browse_file("pdf1"), state="disabled") # lambda prevents immediate run of function with parameters
+browse_pdf1_button.grid(row=manual_base_row, column=2)
 
-chosen_pdf_2 = tk.Entry(right_frame, textvariable=pdf2_path_var, width=50)
+
+pdf2_label = tk.Label(right_frame, text="Select PDF #2:")
+pdf2_label.grid(row=manual_base_row+1, column=0, padx=(10,10), pady=(5,5))
+
+chosen_pdf_2 = tk.Entry(right_frame, textvariable=pdf2_path_var, width=50,  state="disabled")
 chosen_pdf_2.grid(row=manual_base_row+1, column=1)
 
-output_name_label = tk.Label(right_frame, text="Enter an output filename:")
-output_name_label.grid(row=manual_base_row+2, column=0)
+browse_pdf2_button = tk.Button(right_frame, text="Choose PDF #2...", command=lambda: browse_file("pdf2"), state="disabled") # lambda prevents immediate run of function with parameters
+browse_pdf2_button.grid(row=manual_base_row+1, column=2)
 
-output_name = tk.Entry(right_frame, textvariable=output_filename_var, width=50)
+output_name_label = tk.Label(right_frame, text="Enter output filename:")
+output_name_label.grid(row=manual_base_row+2, column=0, padx=(10,10), pady=(5,5))
+
+output_name = tk.Entry(right_frame, textvariable=output_filename_var, width=50, state="disabled")
 output_name.grid(row=manual_base_row+2, column=1)
 
-# _____ SHARED FUNCTIONALITY _____ #
-
 # Output folder instructions
-output_folder_label = tk.Label(right_frame, text="Select an output folder:")
+output_folder_label = tk.Label(right_frame, text="Select output folder:")
 output_folder_label.grid(row=manual_base_row+4, column=0)
 
 # Create field showing chosen folder
-output_field = tk.Entry(right_frame, textvariable=output_path_var, width=50)
-output_field.grid(row=manual_base_row+4, column=1)
+output_folder_field = tk.Entry(right_frame, textvariable=output_path_var, width=50, state="disabled")
+output_folder_field.grid(row=manual_base_row+4, column=1)
 
 # Create output browse button
-output_browse_button = tk.Button(right_frame, text="Browse...", command=browse_output_folder, state="normal")
+output_browse_button = tk.Button(right_frame, text="Browse...", command=browse_output_folder, state="disabled")
 output_browse_button.grid(row=manual_base_row+4, column=2)
+
+# _____ SHARED FUNCTIONALITY _____ #
 
 # Button to run merge
 merge_button = tk.Button(right_frame, text="Merge PDFs", command=on_merge_click, state="disabled")
-merge_button.grid(row=manual_base_row+5, column=1)
+merge_button.grid(row=manual_base_row+5, column=1, pady=(25,10))
 
 # ____________________________________________________
 # Runs GUI window
