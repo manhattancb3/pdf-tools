@@ -32,6 +32,7 @@ from tkinter import filedialog, messagebox
 import re
 from pypdf import PdfWriter
 
+# Merges all pairable PDF files based on numbering criteria
 def auto_merge_pdfs(selected_folder, output_folder):
     '''
     This is the main() function from the original 
@@ -63,10 +64,10 @@ def auto_merge_pdfs(selected_folder, output_folder):
         stipulations = []
         for filename in os.listdir(directory):
             # Resolution documents should always contain "cb3 reso" text
-            if filename.endswith('.pdf') and "cb3 reso" in filename.lower():
+            if filename.endswith('.pdf') and "cb3 reso" in filename.lower() and re.match(r"\s*\d+", filename):
                 resolutions.append(filename)
             # Stipulation documents lack "cb3 reso" text
-            elif filename.endswith('.pdf') and "cb3 reso" not in filename.lower():
+            elif filename.endswith('.pdf') and "cb3 reso" not in filename.lower() and re.match(r"\s*\d+", filename):
                 stipulations.append(filename)
         
         # Check whether resolution AND stipulation files were found
@@ -81,7 +82,7 @@ def auto_merge_pdfs(selected_folder, output_folder):
                         pairs.append([r,s]) # Append pair list to main list
             return pairs
 
-    # Input folder MUST exist, output folder created automatically
+    # Input and output folders come from GUI
     input_folder = selected_folder
     output_folder = output_folder
 
@@ -90,6 +91,7 @@ def auto_merge_pdfs(selected_folder, output_folder):
 
     # Verify that functions found valid pairs to merge
     if pairs:
+        print(pairs)
         for p in pairs:
             # Create merger object/list
             merger = PdfWriter()
@@ -115,7 +117,7 @@ def auto_merge_pdfs(selected_folder, output_folder):
         # Send error message
         status_var.set("Error: folder does not contain files valid for auto-merge")
 
-
+# Merges two specific PDF files
 def manual_merge_pdfs(file1, file2, output_filename, output_folder):
     
     # Create merger object/list
@@ -136,7 +138,7 @@ def manual_merge_pdfs(file1, file2, output_filename, output_folder):
     merger.write(output_path)
     merger.close()
     
-# Function for input "Browse..." button
+# Function for input folder "Browse..." button
 def browse_input_folder():
     folder_selected = filedialog.askdirectory()
     if folder_selected:
@@ -146,7 +148,7 @@ def browse_input_folder():
         # folder_field.config(width=max(50, len(folder_selected)+10))
         folder_field.xview_moveto(1)    # Show end of path
 
-# Function for output "Browse..." button
+# Function for output folder "Browse..." button
 def browse_output_folder():
     folder_selected = filedialog.askdirectory()
     if folder_selected:
@@ -156,6 +158,7 @@ def browse_output_folder():
         # folder_field.config(width=max(50, len(folder_selected)+10))
         folder_field.xview_moveto(1)    # Show end of path
 
+# Function for choosing input PDF files
 def browse_file(pdf_number):
     file_selected = filedialog.askopenfilename(
         title="Select a PDF file",
@@ -171,13 +174,13 @@ def browse_file(pdf_number):
             pdf2_path_var.set(file_selected)
             # chosen_pdf_2.config(width=max(50, len(file_selected)+10))
             chosen_pdf_2.xview_moveto(1)    # Show end of path
-        
 
 # Function for "Merge PDFs" button (calls main function)
 def on_merge_click():
     if radio_selection.get() == "auto_merge":
-        folder = folder_path_var.get()
-        auto_merge_pdfs(folder)
+        input_folder = folder_path_var.get()
+        output_folder = output_path_var.get()
+        auto_merge_pdfs(input_folder, output_folder)
     else:
         file1 = pdf1_path_var.get()
         file2 = pdf2_path_var.get()
@@ -185,7 +188,6 @@ def on_merge_click():
         output_folder = output_path_var.get()
         manual_merge_pdfs(file1, file2, output_filename, output_folder)
     
-
 # Function to check if folder contains any PDFs
 def folder_contains_pdfs(folder):
     try:
@@ -286,8 +288,6 @@ left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 # Right frame for other functionality
 right_frame = tk.Frame(root, bg="lightgray")
 right_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
-
-
 
 
 # __________ GUI VARIABLES __________ #
