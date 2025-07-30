@@ -24,7 +24,7 @@ from pypdf import PdfWriter
 # Merges all pairable PDF files based on numbering criteria
 def auto_merge_pdfs(selected_folder, output_folder):
     '''
-    This is the main() function from the original 
+    This is the main() function from the original script
     '''
     # Finds leading numbers in filenames
     def extract_number(filename):
@@ -101,10 +101,7 @@ def auto_merge_pdfs(selected_folder, output_folder):
             merger.close()
         
         # Send feedback message once merge is completed
-        status_var.set("Merge completed successfully.")
-    else:
-        # Send error message
-        status_var.set("Error: folder does not contain files valid for auto-merge")
+        show_feedback("Merge completed successfully.", "green")
 
 # Merges two specific PDF files
 def manual_merge_pdfs(file1, file2, output_filename, output_folder):
@@ -112,13 +109,8 @@ def manual_merge_pdfs(file1, file2, output_filename, output_folder):
     # Create merger object/list
     merger = PdfWriter()
     for file in [file1, file2]:
-        # # Form file path from existing file name
-        # file_path = os.path.join(output_folder, file)
         # Add file to merger object
         merger.append(file)
-
-    # Edit filename
-    # output_filename = p[0].replace(".pdf", " wSTIPS.pdf")
 
     # Form output path of new merged file
     output_path = os.path.join(output_folder, output_filename)
@@ -126,16 +118,13 @@ def manual_merge_pdfs(file1, file2, output_filename, output_folder):
     # Write new file to output folder and close
     merger.write(output_path)
     merger.close()
-    status_var.set("Merge completed successfully.")
+    show_feedback("Merge completed successfully.", "green")
     
 # Function for input folder "Browse..." button
 def browse_input_folder():
     folder_selected = filedialog.askdirectory()
     if folder_selected:
         auto_folder_path_var.set(folder_selected)
-
-        # Update size of field box based on file path size
-        # folder_field.config(width=max(50, len(folder_selected)+10))
         folder_field.xview_moveto(1)    # Show end of path
 
 # Function for output folder "Browse..." button
@@ -143,41 +132,37 @@ def browse_output_folder():
     folder_selected = filedialog.askdirectory()
     if folder_selected:
         output_path_var.set(folder_selected)
-
-        # Update size of field box based on file path size
-        # folder_field.config(width=max(50, len(folder_selected)+10))
         folder_field.xview_moveto(1)    # Show end of path
 
 # Function for choosing input PDF files
 def browse_file(pdf_number):
     file_selected = filedialog.askopenfilename(
         title="Select a PDF file",
-        filetypes=[("PDF files", "*.pdf")]
+        filetypes=[("PDF files", "*.pdf")]  # Criteria for valid file
     )
 
     if file_selected:
         if pdf_number == "pdf1":
             pdf1_path_var.set(file_selected)
-            # chosen_pdf_1.config(width=max(50, len(file_selected)+10))
             chosen_pdf_1.xview_moveto(1)    # Show end of path
         elif pdf_number == "pdf2":
             pdf2_path_var.set(file_selected)
-            # chosen_pdf_2.config(width=max(50, len(file_selected)+10))
             chosen_pdf_2.xview_moveto(1)    # Show end of path
 
-# Function for "Merge PDFs" button (calls main function)
+# Function for "Merge PDFs" button (calls main functions)
 def on_merge_click():
-    if radio_selection.get() == "auto_merge":
-        input_folder = auto_folder_path_var.get()
-        output_folder = output_path_var.get()
-        auto_merge_pdfs(input_folder, output_folder)
-    else:
-        file1 = pdf1_path_var.get()
-        file2 = pdf2_path_var.get()
-        output_filename = output_filename_var.get()
-        output_folder = output_path_var.get()
-        manual_merge_pdfs(file1, file2, output_filename, output_folder)
-    
+    if validate_inputs():
+        if radio_selection.get() == "auto_merge":
+            input_folder = auto_folder_path_var.get()
+            output_folder = output_path_var.get()
+            auto_merge_pdfs(input_folder, output_folder)
+        else:
+            file1 = pdf1_path_var.get()
+            file2 = pdf2_path_var.get()
+            output_filename = output_filename_var.get()
+            output_folder = output_path_var.get()
+            manual_merge_pdfs(file1, file2, output_filename, output_folder)
+
 # Function to check if folder contains any PDFs
 def folder_contains_pdfs(folder):
     try:
@@ -188,49 +173,9 @@ def folder_contains_pdfs(folder):
         # If folder is not accessible or any error occurs, treat as invalid
         return False
 
-# Function called whenever folder path changes
-def on_folder_change(*args):
-    auto_input_folder = auto_folder_path_var.get()
-    output_folder = output_path_var.get()
-
-    if radio_selection.get() == "auto_merge" and auto_input_folder:
-        if os.path.isdir(auto_input_folder) and folder_contains_pdfs(auto_input_folder):
-            merge_button.config(state="normal")  # Enable button
-            status_var.set("Ready")
-        else:
-            merge_button.config(state="disabled")  # Disable button
-            status_var.set("Invalid folder selection - verify choice is a valid folder with PDF files.")
-    elif radio_selection.get() == "manual_merge" and output_folder:
-        if os.path.isdir(output_folder):
-            merge_button.config(state="normal")  # Enable button
-            status_var.set("Ready")
-        else:
-            merge_button.config(state="disabled")  # Disable button
-            status_var.set("Invalid output folder selection.")
-
 # Checks whether file is PDF
 def is_pdf_file(filepath):
     return os.path.isfile(filepath) and filepath.lower().endswith(".pdf")
-
-# Validates file selection whenever manual merge file is selected
-def on_file_change(*args):
-    file1 = pdf1_path_var.get()
-    file2 = pdf2_path_var.get()
-
-    if file1 and file2:
-        if is_pdf_file(file1) and is_pdf_file(file2):
-            pass
-            # merge_button.config(state="normal")  # Enable button
-            # status_var.set("Ready")
-        elif not is_pdf_file(file1) and is_pdf_file(file2):
-            merge_button.config(state="disabled")  # Disable button
-            status_var.set("Invalid file selection - verify that PDF #1 is a PDF file.")
-        elif is_pdf_file(file1) and not is_pdf_file(file2):
-            merge_button.config(state="disabled")  # Disable button
-            status_var.set("Invalid file selection - verify that PDF #2 is a PDF file.")
-        else:
-            merge_button.config(state="disabled")  # Disable button
-            status_var.set("Invalid file selections - verify that chosen files are PDF files.")
 
 # Function called whenever radio button selection changes
 def on_radio_option_change():
@@ -245,15 +190,14 @@ def on_radio_option_change():
         # Enable auto functionality
         folder_field.config(state="normal")
         browse_button.config(state="normal")
+        output_browse_button.config(state="normal")
 
         # Disable manual functionality
         chosen_pdf_1.config(state="disabled")
         chosen_pdf_2.config(state="disabled")
         output_name.config(state="disabled")
-        output_folder_field.config(state="disabled")
         browse_pdf1_button.config(state="disabled")
         browse_pdf2_button.config(state="disabled")
-        output_browse_button.config(state="disabled")
     else:
         # Enable manual functionality
         chosen_pdf_1.config(state="normal")
@@ -268,20 +212,89 @@ def on_radio_option_change():
         browse_button.config(state="disabled")
         folder_field.config(state="disabled")
 
+# Checks for inputs to enable Merge
+def check_for_inputs(*args):    # Must accept automatically passed arguments
+    # ______ Check Auto Inputs ______
+    if radio_selection.get() == "auto_merge":
+        if auto_folder_path_var.get() and output_path_var.get():
+            merge_button.config(state="normal")  # Enable button
+            show_feedback("Ready", "green")
+        else:
+            merge_button.config(state="disabled")  # Disable button
+    
+    # ______ Check Manual Inputs ______
+    else:
+        # Validate PDF file inputs
+        if pdf1_path_var.get() and pdf2_path_var.get() and output_filename_var.get() and output_path_var.get():
+            merge_button.config(state="normal")  # Enable button
+            show_feedback("Ready", "green")
+        else:
+            merge_button.config(state="disabled")  # Disable button
+
 # Validates inputs
 def validate_inputs():
+    '''
+    Called within multiple functions whenever any user inputs change.
+    Existence of an input is verified before calling validate_inputs().
+    '''
+    valid_inputs = False
+
+    # ______ Auto Inputs ______
+    # Validate folder with PDF files
     if radio_selection.get() == "auto_merge":
-        auto_folder_path_var.get()
-
+        if os.path.isdir(auto_folder_path_var.get()) and folder_contains_pdfs(auto_folder_path_var.get()):
+            valid_inputs = True
+        else:
+            show_feedback("Folder does not contain PDF files", "red")
+            valid_inputs = False
+    # ______ Manual Inputs ______
     else:
-        pdf1_path_var.get()
-        pdf2_path_var.get()
-        output_filename_var.get()
-        output_path_var.get()
+        valid_pdfs = False
+        valid_output_filename = False
+        valid_output_folder = False
 
-    status_var.get()
+        # Validate PDF file inputs
+        if is_pdf_file(pdf1_path_var.get()) and is_pdf_file(pdf2_path_var.get()):
+            valid_pdfs = True
+        elif not is_pdf_file(pdf1_path_var.get()) and is_pdf_file(pdf2_path_var.get()):
+            valid_pdfs = False
+            show_feedback("Invalid file selection - verify that PDF #1 is a PDF file", "red")
+        elif is_pdf_file(pdf1_path_var.get()) and not is_pdf_file(pdf2_path_var.get()):
+            valid_pdfs = False
+            show_feedback("Invalid file selection - verify that PDF #2 is a PDF file", "red")
+        else:
+            valid_pdfs = False
+            show_feedback("Invalid file selections - verify that chosen files are PDF files", "red")
 
-# GUI Setup
+        # Validate output filename
+        if output_filename_var.get()[-4:] == ".pdf":
+            valid_output_filename = True
+        else:
+            valid_output_filename = False
+            show_feedback("Output filename must end with .pdf", "red")
+        
+        # Combine individual validations
+        valid_inputs = valid_pdfs and valid_output_filename
+    
+    # ______ Auto & Manual Inputs ______
+    # Validate folder for output file
+    if os.path.isdir(output_path_var.get()):
+        valid_output_folder = True
+    else:
+        valid_output_folder = False
+        show_feedback("Invalid output folder selection", "red")
+
+    return valid_inputs and valid_output_folder
+
+
+# Feedback helper function for varying message and color
+def show_feedback(message, color):
+    status_var.set(message) # Updates message
+    status_label.config(fg=color)   # Updates text color
+
+
+
+# __________ GUI Setup __________ #
 root = tk.Tk()
 root.title("PDF Merger")
 root.geometry("800x450")    # window width & height in pixels
@@ -300,38 +313,37 @@ left_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
 right_frame = tk.Frame(root, bg="lightgray")
 right_frame.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
 
-
 # __________ GUI VARIABLES __________ #
 
 # Holds auto merge folder path string
 auto_folder_path_var = tk.StringVar()    
-auto_folder_path_var.trace_add("write", on_folder_change)    # validate folder selection whenever it changes
-
-# Holds status message string
-status_var = tk.StringVar() 
+auto_folder_path_var.trace_add("write", check_for_inputs)    # validate folder selection whenever it changes
 
 # Holds radio button selection
 radio_selection = tk.StringVar(value="none")  # Default to "none" to have invisible radio selected (visual glitch otherwise)
 
 # Holds PDF #1 selection
 pdf1_path_var = tk.StringVar()    
-pdf1_path_var.trace_add("write", on_file_change)    # validate folder selection whenever it changes
+pdf1_path_var.trace_add("write", check_for_inputs)    # validate folder selection whenever it changes
 
 # Holds PDF #2 selection
 pdf2_path_var = tk.StringVar()    
-pdf2_path_var.trace_add("write", on_file_change)    # validate folder selection whenever it changes
+pdf2_path_var.trace_add("write", check_for_inputs)    # validate folder selection whenever it changes
 
+# Holds output filename
 output_filename_var = tk.StringVar()
+output_filename_var.trace_add("write", check_for_inputs)
 
 # Holds output folder path string
 output_path_var = tk.StringVar()
-output_path_var.trace_add("write", on_folder_change)    # validate folder selection whenever it changes
+output_path_var.trace_add("write", check_for_inputs)    # validate folder selection whenever it changes
 
-# __________________________________ #
+# Holds status message string
+status_var = tk.StringVar() 
 
-'''
-HEADER SECTION
-'''
+
+# __________ HEADER GUI ELEMENTS __________ #
+
 # Tool overview/introduction
 intro_text = (
     "Use this tool to merge PDF files. It is intended for two different uses:"
@@ -341,14 +353,12 @@ intro_text = (
 introduction = tk.Label(root, text=intro_text, font=("Helvetica", 10), wraplength=700, justify="left")
 introduction.grid(row=0, column=0, columnspan=2, sticky="w", pady=10, padx=10)
 
-'''
-LEFT FRAME SECTION
-'''
+# __________ LEFT FRAME GUI ELEMENTS __________ #
 
 # Radio button section
 # AUTO
 instructions = tk.Label(left_frame, text="Choose an option:", font=("Helvetica", 12, "bold"))
-instructions.grid(row=1, column=0, sticky="w", pady=(10, 5))
+instructions.grid(row=1, column=0, sticky="w", pady=(0, 5))
 
 auto_radio_button = tk.Radiobutton(left_frame, text="Auto SLA PDF Merge", variable=radio_selection, value="auto_merge", command=on_radio_option_change, font=("Helvetica", 10))
 auto_radio_button.grid(row=2, column=0, sticky="w", pady=5)
@@ -356,7 +366,7 @@ auto_explainer_text = (
     "NOTE: requires input folder with prepared PDF files (see SLA process guide) and output folder"
 )
 auto_instruction = tk.Label(left_frame, text=auto_explainer_text, font=("Helvetica", 8), wraplength=150, justify="left")
-auto_instruction.grid(row=3, column=0, sticky="w", pady=5)
+auto_instruction.grid(row=3, column=0, sticky="w", pady=5, padx=(5,0))
 
 # MANUAL
 manual_radio_button = tk.Radiobutton(left_frame, text="Manual PDF Merge", variable=radio_selection, value="manual_merge", command=on_radio_option_change, font=("Helvetica", 10))
@@ -365,38 +375,36 @@ manual_explainer_text = (
     "NOTE: requires two input files, output filename, and output folder"
 )
 manual_instruction = tk.Label(left_frame, text=manual_explainer_text, font=("Helvetica", 8), wraplength=150, justify="left")
-manual_instruction.grid(row=5, column=0, sticky="w", pady=5)
+manual_instruction.grid(row=5, column=0, sticky="w", pady=5, padx=(5,0))
 
 # Invisible radio button required to create initial view with no selections
 dummy_radio_button = tk.Radiobutton(left_frame, variable=radio_selection, value="none")
 dummy_radio_button.pack_forget()    # Makes button invisible
 
 # Label for general status feedback (ex: Success, Error, etc.)
-status_label = tk.Label(left_frame, textvariable=status_var, font=("Helvetica", 12, "bold"), fg="red", wraplength=150, justify="center")
-status_label.grid(row=6, column=0)
+status_label = tk.Label(left_frame, textvariable=status_var, font=("Helvetica", 12, "bold"), wraplength=150, justify="center")
+status_label.grid(row=6, column=0, pady=(30,0))
 
 
-'''
-RIGHT FRAME SECTION
-'''
-# _____ AUTO MERGE _____ #
+# __________ RIGHT FRAME GUI ELEMENTS __________ #
+
+# _____ AUTO MERGE FUNCTIONALITY _____ #
 # Auto merge instructions
 auto_label = tk.Label(right_frame, text="Select folder with PDFs:")
-auto_label.grid(row=1, column=0, padx=(10,10), pady=(50,80))
+auto_label.grid(row=1, column=0, padx=(10,10), pady=(40,75))
 
 # Create field showing chosen folder
 folder_field = tk.Entry(right_frame, textvariable=auto_folder_path_var, width=50, state="disabled")
-folder_field.grid(row=1, column=1, padx=(10,10), pady=(50,80))
+folder_field.grid(row=1, column=1, padx=(10,10), pady=(40,75))
 
 # Create browse button
 browse_button = tk.Button(right_frame, text="Browse...", command=browse_input_folder, state="disabled")
-browse_button.grid(row=1, column=2, padx=(10,0), pady=(50,80))
+browse_button.grid(row=1, column=2, padx=(10,0), pady=(40,75))
 
 
-# _____ MANUAL MERGE _____ #
+# _____ MANUAL MERGE FUNCTIONALITY _____ #
 manual_base_row = 4
 
-# Create browse button & display to show chosen file
 pdf1_label = tk.Label(right_frame, text="Select PDF #1:")
 pdf1_label.grid(row=manual_base_row, column=0, padx=(10,10), pady=(5,5))
 
@@ -405,7 +413,6 @@ chosen_pdf_1.grid(row=manual_base_row, column=1)
 
 browse_pdf1_button = tk.Button(right_frame, text="Choose PDF #1...", command=lambda: browse_file("pdf1"), state="disabled") # lambda prevents immediate run of function with parameters
 browse_pdf1_button.grid(row=manual_base_row, column=2)
-
 
 pdf2_label = tk.Label(right_frame, text="Select PDF #2:")
 pdf2_label.grid(row=manual_base_row+1, column=0, padx=(10,10), pady=(5,5))
@@ -422,24 +429,26 @@ output_name_label.grid(row=manual_base_row+2, column=0, padx=(10,10), pady=(5,5)
 output_name = tk.Entry(right_frame, textvariable=output_filename_var, width=50, state="disabled")
 output_name.grid(row=manual_base_row+2, column=1)
 
-# Output folder instructions
-output_folder_label = tk.Label(right_frame, text="Select output folder:")
-output_folder_label.grid(row=manual_base_row+4, column=0)
-
-# Create field showing chosen folder
-output_folder_field = tk.Entry(right_frame, textvariable=output_path_var, width=50, state="disabled")
-output_folder_field.grid(row=manual_base_row+4, column=1)
-
-# Create output browse button
-output_browse_button = tk.Button(right_frame, text="Browse...", command=browse_output_folder, state="disabled")
-output_browse_button.grid(row=manual_base_row+4, column=2)
 
 # _____ SHARED FUNCTIONALITY _____ #
 
+# Output folder instructions
+output_folder_label = tk.Label(right_frame, text="Select output folder:")
+output_folder_label.grid(row=manual_base_row+4, column=0, pady=(50,10))
+
+# Create field showing chosen folder
+output_folder_field = tk.Entry(right_frame, textvariable=output_path_var, width=50, state="disabled")
+output_folder_field.grid(row=manual_base_row+4, column=1, pady=(50,10))
+
+# Create output browse button
+output_browse_button = tk.Button(right_frame, text="Browse...", command=browse_output_folder, state="disabled")
+output_browse_button.grid(row=manual_base_row+4, column=2, pady=(50,10))
+
 # Button to run merge
 merge_button = tk.Button(right_frame, text="Merge PDFs", command=on_merge_click, state="disabled")
-merge_button.grid(row=manual_base_row+5, column=1, pady=(25,10))
+merge_button.grid(row=manual_base_row+5, column=1, pady=(10,10))
 
 # ____________________________________________________
+
 # Runs GUI window
 root.mainloop()
