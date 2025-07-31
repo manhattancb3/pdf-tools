@@ -1,8 +1,17 @@
+# PDF Merge Tool
+
+![Screenshot](pdf_merge_tool_screenshot.png)
 
 ## Description:
 This program creates a user interface to merge PDF files. There are two options for functionality:
 1. Automatically merge prepared Community Board resolutions and SLA stipulation documents.
 2. Manually select two PDF documents to merge.
+
+## Modules, Packages, Libraries
+- **os** - allows access to Windows File Explorer and local file information
+- **re** - regular expressions
+- **tkinter** - creates user interface
+- **pypdf** - supports many PDF functions such as merging
 
 ### Auto SLA Workflow:
 1) Create PDFs of resolutions and save in "Resolution Document Components" Sharepoint folder
